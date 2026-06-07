@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Habit Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      padding: 32px 16px;
+      color: #1a1a2e;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+      color: #1a1a2e;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* Add habit form */
+    .add-form {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 28px;
+    }
+
+    .add-form h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .form-fields {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .form-fields input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafafa;
+    }
+
+    .form-fields input:focus {
+      border-color: #6c63ff;
+      background: #fff;
+    }
+
+    .input-target {
+      width: 130px;
+      flex: none;
+    }
+
+    button.add-btn {
+      padding: 10px 22px;
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    button.add-btn:hover { background: #574fd6; }
+    button.add-btn:active { transform: scale(0.97); }
+
+    /* Habit cards */
+    .habits-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.95rem;
+      padding: 32px 0;
+    }
+
+    .habit-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .habit-check {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2.5px solid #d0d0d0;
+      background: #fafafa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .habit-check.done {
+      background: #6c63ff;
+      border-color: #6c63ff;
+    }
+
+    .habit-check svg {
+      display: none;
+    }
+
+    .habit-check.done svg {
+      display: block;
+    }
+
+    .habit-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .habit-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .habit-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .streak-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6c63ff;
+      background: #ede9ff;
+      padding: 2px 10px;
+      border-radius: 99px;
+    }
+
+    .target-info {
+      font-size: 0.8rem;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .edit-target-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #bbb;
+      padding: 0;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .edit-target-btn:hover { color: #6c63ff; }
+
+    .target-edit-form {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .target-edit-form input {
+      width: 80px;
+      padding: 3px 8px;
+      border: 1.5px solid #6c63ff;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      outline: none;
+      background: #fafafa;
+    }
+
+    .target-edit-form button {
+      padding: 3px 10px;
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .target-edit-form button:hover { background: #574fd6; }
+
+    .set-target-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: #aaa;
+      text-decoration: underline;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .set-target-btn:hover { color: #6c63ff; }
+
+    .progress-bar-wrap {
+      margin-top: 8px;
+      height: 6px;
+      background: #ede9ff;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #6c63ff;
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-bar-fill.complete {
+      background: #22c55e;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #ccc;
+      padding: 4px;
+      border-radius: 8px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .delete-btn:hover { color: #ef4444; }
+
+    /* Celebration modal */
+    .celebration-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .celebration-overlay.visible {
+      display: flex;
+    }
+
+    .celebration-modal {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px 28px 24px;
+      text-align: center;
+      max-width: 340px;
+      width: 90%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      animation: pop-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    @keyframes pop-in {
+      from { transform: scale(0.7); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .celebration-modal h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1a1a2e;
+    }
+
+    .celebration-modal p {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    .celebration-modal img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .celebration-close {
+      padding: 10px 28px;
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .celebration-close:hover { background: #574fd6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Habit Tracker</h1>
+
+    <div class="add-form">
+      <h2>New Habit</h2>
+      <div class="form-row">
+        <div class="form-fields">
+          <input type="text" id="habit-name-input" placeholder="Habit name (e.g. Read 30 min)" />
+          <input type="number" id="habit-target-input" class="input-target" placeholder="Target days" min="1" />
+        </div>
+        <button class="add-btn" id="add-btn">Add Habit</button>
+      </div>
+    </div>
+
+    <div class="habits-list" id="habits-list">
+      <p class="empty-state" id="empty-state">No habits yet. Add one above!</p>
+    </div>
+  </div>
+
+  <div class="celebration-overlay" id="celebration-overlay">
+    <div class="celebration-modal">
+      <h2>🎉 Goal reached!</h2>
+      <p id="celebration-text"></p>
+      <img src="https://media.giphy.com/media/U4DswrBiaz0p67ZweH/giphy.gif" alt="Michael Scott celebrating" />
+      <button class="celebration-close" id="celebration-close">Thanks, Michael!</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'habit_tracker_data';
+    const CELEBRATED_KEY = 'habit_tracker_celebrated';
+
+    const loadCelebrated = () => {
+      try { return JSON.parse(localStorage.getItem(CELEBRATED_KEY)) || {}; } catch { return {}; }
+    };
+
+    const showCelebration = (habitName) => {
+      document.getElementById('celebration-text').textContent = `You kept "${habitName}" going for your target — Dunder Mifflin is proud of you.`;
+      document.getElementById('celebration-overlay').classList.add('visible');
+    };
+
+    document.getElementById('celebration-close').addEventListener('click', () => {
+      document.getElementById('celebration-overlay').classList.remove('visible');
+    });
+
+    document.getElementById('celebration-overlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('celebration-overlay')) {
+        document.getElementById('celebration-overlay').classList.remove('visible');
+      }
+    });
+
+    const loadData = () => {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    };
+
+    const saveData = (habits) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+    };
+
+    const todayStr = () => new Date().toISOString().slice(0, 10);
+
+    const calcStreak = (checkedDates) => {
+      if (!checkedDates.length) return 0;
+      const sorted = [...checkedDates].sort();
+      const today = todayStr();
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const last = sorted[sorted.length - 1];
+      if (last !== today && last !== yesterday) return 0;
+      let streak = 0;
+      const cursor = new Date(last);
+      const dateSet = new Set(sorted);
+      while (true) {
+        const d = cursor.toISOString().slice(0, 10);
+        if (!dateSet.has(d)) break;
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      return streak;
+    };
+
+    const renderHabits = () => {
+      const habits = loadData();
+      const list = document.getElementById('habits-list');
+      const empty = document.getElementById('empty-state');
+
+      // Remove all cards (keep empty state element)
+      [...list.querySelectorAll('.habit-card')].forEach(c => c.remove());
+
+      if (!habits.length) {
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+
+      habits.forEach((habit) => {
+        const today = todayStr();
+        const doneToday = habit.checkedDates.includes(today);
+        const streak = calcStreak(habit.checkedDates);
+        const target = habit.target || 0;
+        const pct = target > 0
+          ? Math.min(100, Math.round((streak / target) * 100))
+          : Math.min(100, Math.round((streak / 30) * 100));
+        const complete = target > 0 && streak >= target;
+
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+        card.dataset.id = habit.id;
+
+        const targetSection = target > 0
+          ? `<span class="target-info">
+               ${streak} / ${target} days${complete ? ' ✓' : ''}
+               <button class="edit-target-btn" data-id="${habit.id}" title="Edit target">
+                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                   <path d="M15.232 5.232l3.536 3.536M9 11l-5 5v3h3l5-5-3-3zm6-6l3 3-9 9-3-3 9-9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                 </svg>
+               </button>
+             </span>`
+          : `<button class="set-target-btn" data-id="${habit.id}">Set target</button>`;
+
+        card.innerHTML = `
+          <div class="habit-check ${doneToday ? 'done' : ''}" data-id="${habit.id}" title="Mark today">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10.5L8.5 15L16 7" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="habit-info">
+            <div class="habit-name">${escHtml(habit.name)}</div>
+            <div class="habit-meta">
+              <span class="streak-badge">${streak} day${streak !== 1 ? 's' : ''} streak</span>
+              <span class="target-wrapper" data-id="${habit.id}">${targetSection}</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill ${complete ? 'complete' : ''}" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <button class="delete-btn" data-id="${habit.id}" title="Delete habit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        `;
+
+        list.appendChild(card);
+      });
+    };
+
+    const escHtml = (str) => str.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // Toggle today's check
+    document.getElementById('habits-list').addEventListener('click', (e) => {
+      const checkBtn = e.target.closest('.habit-check');
+      if (checkBtn) {
+        const id = checkBtn.dataset.id;
+        const habits = loadData();
+        const habit = habits.find(h => h.id === id);
+        if (!habit) return;
+        const today = todayStr();
+        if (habit.checkedDates.includes(today)) {
+          habit.checkedDates = habit.checkedDates.filter(d => d !== today);
+          saveData(habits);
+          renderHabits();
+        } else {
+          habit.checkedDates.push(today);
+          saveData(habits);
+          renderHabits();
+          const newStreak = calcStreak(habit.checkedDates);
+          const celebrated = loadCelebrated();
+          if (habit.target > 0 && newStreak >= habit.target && !celebrated[habit.id]) {
+            celebrated[habit.id] = true;
+            localStorage.setItem(CELEBRATED_KEY, JSON.stringify(celebrated));
+            showCelebration(habit.name);
+          }
+        }
+        return;
+      }
+
+      const delBtn = e.target.closest('.delete-btn');
+      if (delBtn) {
+        const id = delBtn.dataset.id;
+        const habits = loadData().filter(h => h.id !== id);
+        saveData(habits);
+        renderHabits();
+        return;
+      }
+
+      const editBtn = e.target.closest('.edit-target-btn, .set-target-btn');
+      if (editBtn) {
+        const id = editBtn.dataset.id;
+        const wrapper = document.getElementById('habits-list').querySelector(`.target-wrapper[data-id="${id}"]`);
+        if (!wrapper || wrapper.querySelector('.target-edit-form')) return;
+        const habits = loadData();
+        const habit = habits.find(h => h.id === id);
+        const currentTarget = habit ? (habit.target || '') : '';
+        wrapper.innerHTML = `
+          <form class="target-edit-form" data-id="${id}">
+            <input type="number" min="1" value="${currentTarget}" placeholder="Days" autofocus />
+            <button type="submit">Save</button>
+          </form>`;
+        const inp = wrapper.querySelector('input');
+        inp.focus();
+        inp.select();
+        return;
+      }
+    });
+
+    document.getElementById('habits-list').addEventListener('submit', (e) => {
+      const form = e.target.closest('.target-edit-form');
+      if (!form) return;
+      e.preventDefault();
+      const id = form.dataset.id;
+      const val = parseInt(form.querySelector('input').value) || 0;
+      const habits = loadData();
+      const habit = habits.find(h => h.id === id);
+      if (habit) { habit.target = val > 0 ? val : 0; saveData(habits); }
+      renderHabits();
+    });
+
+    // Add habit
+    const addHabit = () => {
+      const nameInput = document.getElementById('habit-name-input');
+      const targetInput = document.getElementById('habit-target-input');
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return; }
+      const target = parseInt(targetInput.value) || 0;
+      const habits = loadData();
+      habits.push({
+        id: Date.now().toString(),
+        name,
+        target,
+        checkedDates: [],
+      });
+      saveData(habits);
+      nameInput.value = '';
+      targetInput.value = '';
+      renderHabits();
+      nameInput.focus();
+    };
+
+    document.getElementById('add-btn').addEventListener('click', addHabit);
+    document.getElementById('habit-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addHabit();
+    });
+    document.getElementById('habit-target-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addHabit();
+    });
+
+    renderHabits();
+  </script>
+</body>
+</html>
