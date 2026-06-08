@@ -426,6 +426,15 @@
     }
 
     .celebration-close:hover { background: #574fd6; }
+
+    /* Filter tabs */
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-tab { padding: 7px 16px; border: 1.5px solid #e0e0e0; border-radius: 99px; background: #fff; color: #888; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background 0.2s, border-color 0.2s, color 0.2s; }
+    .filter-tab:hover { border-color: #6c63ff; color: #6c63ff; }
+    .filter-tab.active { background: #6c63ff; border-color: #6c63ff; color: #fff; }
+    body.dark .filter-tab { background: #1c1f2e; border-color: #333; color: #777; }
+    body.dark .filter-tab:hover { border-color: #6c63ff; color: #6c63ff; }
+    body.dark .filter-tab.active { background: #6c63ff; border-color: #6c63ff; color: #fff; }
   </style>
 </head>
 <body>
@@ -448,6 +457,13 @@
       </div>
     </div>
 
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="not-started">Not Started</button>
+      <button class="filter-tab" data-filter="in-progress">In Progress</button>
+      <button class="filter-tab" data-filter="completed">Completed</button>
+    </div>
+
     <div class="habits-list" id="habits-list">
       <p class="empty-state" id="empty-state">No habits yet. Add one above!</p>
     </div>
@@ -465,6 +481,7 @@
   <script>
     const STORAGE_KEY = 'habit_tracker_data';
     const DARK_KEY = 'habit_tracker_dark';
+    const filterState = { active: 'all' };
 
     const applyDark = (dark) => {
       document.body.classList.toggle('dark', dark);
@@ -472,6 +489,16 @@
     };
 
     applyDark(localStorage.getItem(DARK_KEY) === '1');
+
+    document.getElementById('filter-tabs').addEventListener('click', (e) => {
+      const tab = e.target.closest('.filter-tab');
+      if (!tab) return;
+      filterState.active = tab.dataset.filter;
+      [...document.querySelectorAll('.filter-tab')].forEach(t =>
+        t.classList.toggle('active', t === tab)
+      );
+      renderHabits();
+    });
 
     document.getElementById('dark-toggle').addEventListener('click', () => {
       const isDark = document.body.classList.toggle('dark');
@@ -534,19 +561,35 @@
 
     const renderHabits = () => {
       const habits = loadData();
+      const filtered = habits.filter((habit) => {
+        const streak = calcStreak(habit.checkedDates);
+        const target = habit.target || 0;
+        if (filterState.active === 'all') return true;
+        if (filterState.active === 'not-started') return streak === 0;
+        if (filterState.active === 'in-progress') return streak > 0 && (target === 0 || streak < target);
+        if (filterState.active === 'completed') return target > 0 && streak >= target;
+        return true;
+      });
       const list = document.getElementById('habits-list');
       const empty = document.getElementById('empty-state');
 
       // Remove all cards (keep empty state element)
       [...list.querySelectorAll('.habit-card')].forEach(c => c.remove());
 
-      if (!habits.length) {
+      if (!filtered.length) {
+        const messages = {
+          'all': 'No habits yet. Add one above!',
+          'not-started': 'No habits without an active streak.',
+          'in-progress': 'No habits in progress right now.',
+          'completed': 'No completed habits yet.',
+        };
+        empty.textContent = messages[filterState.active] || 'No habits yet. Add one above!';
         empty.style.display = '';
         return;
       }
       empty.style.display = 'none';
 
-      habits.forEach((habit) => {
+      filtered.forEach((habit) => {
         const today = todayStr();
         const doneToday = habit.checkedDates.includes(today);
         const streak = calcStreak(habit.checkedDates);
